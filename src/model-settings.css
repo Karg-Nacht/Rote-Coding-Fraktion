@@ -1,0 +1,348 @@
+.model-settings {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  align-items: start;
+  gap: 22px 36px;
+}
+.model-settings .current-model {
+  display: flex;
+  align-items: center;
+  min-height: 46px;
+  gap: 6px;
+  padding: 6px 0 10px;
+  border-radius: var(--radius-md);
+}
+.current-model-copy,
+.model-settings-favorites button > span,
+.model-settings .integration-list button > span {
+  flex: 1;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+.model-settings strong {
+  font-weight: 550;
+}
+.model-settings-favorites button > svg,
+.model-settings .integration-list button > svg {
+  flex: none;
+  color: var(--text-secondary);
+}
+.current-model-copy small,
+.model-settings-favorites small {
+  display: block;
+  color: var(--text-secondary);
+  margin-top: 2px;
+}
+.model-settings .current-model-copy > strong {
+  display: block;
+  font-size: 17px;
+  font-weight: 600;
+  line-height: 1.35;
+}
+.current-model-copy :is(strong, small) {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.current-model-meta {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  color: var(--text-secondary);
+}
+.current-model-meta small {
+  min-width: 0;
+  margin: 0;
+}
+.model-settings .current-model .model-variant {
+  max-width: 62%;
+}
+.model-settings .current-model-id {
+  font-size: 11px;
+  margin-top: 0;
+}
+.current-model > button {
+  flex: none;
+}
+.model-settings-pin[aria-pressed="true"] {
+  background: var(--surface);
+  color: color-mix(in srgb, var(--text) 45%, var(--settings-accent));
+}
+.model-settings .secondary {
+  min-height: 32px;
+  padding: 5px 9px;
+  border-color: var(--border);
+  background: transparent;
+  font-size: 12px;
+  line-height: 1.35;
+}
+.model-settings .secondary:hover:not(:disabled) {
+  background: var(--surface);
+}
+.model-settings .settings-disclosure {
+  padding: 3px 0 0;
+}
+.model-settings .settings-disclosure > div {
+  padding: 0;
+}
+.model-settings .settings-disclosure > summary {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 7px 8px;
+  min-height: 32px;
+  border-radius: var(--radius-md);
+  background: var(--surface-recessed);
+  line-height: 18px;
+  list-style: none;
+}
+.model-settings .settings-disclosure > summary::-webkit-details-marker {
+  display: none;
+}
+.model-settings .settings-disclosure > summary::before {
+  content: "";
+  flex: none;
+  width: 5px;
+  height: 5px;
+  margin: 0 4px;
+  border-right: 1px solid currentColor;
+  border-bottom: 1px solid currentColor;
+  transform: rotate(-45deg);
+}
+.model-settings .settings-disclosure[open] > summary::before {
+  transform: rotate(45deg);
+}
+.model-settings .settings-disclosure[open] > summary {
+  margin-bottom: 4px;
+}
+.model-settings .settings-disclosure > summary:hover,
+.model-settings .provider-catalog-toggle:hover {
+  background: var(--surface);
+  color: var(--text);
+}
+.model-settings .settings-disclosure > summary:focus-visible,
+.model-settings :is(.current-model, .connections-settings):focus {
+  outline: 2px solid var(--focus);
+  outline-offset: 2px;
+}
+.model-settings-favorites,
+.model-settings .configured-providers {
+  max-height: 176px;
+  overflow: auto;
+  scrollbar-width: thin;
+}
+.model-settings-favorites button,
+.model-settings .integration-list > button {
+  display: flex;
+  align-items: center;
+  text-align: left;
+  gap: 8px;
+  width: 100%;
+  min-height: calc(var(--density-nav-height) + 3px);
+  padding: 5px 8px;
+  border: 0;
+  border-radius: var(--radius-sm);
+  font-size: 12px;
+}
+.model-settings-favorites button:hover:not(:disabled),
+.model-settings .integration-list > button:hover:not(:disabled) {
+  background: var(--surface);
+}
+.model-settings-favorites button[aria-pressed="true"] {
+  background: var(--surface-recessed);
+}
+.model-settings .integration-list {
+  scrollbar-width: thin;
+}
+.model-settings .integration-list small {
+  display: block;
+  margin-top: 2px;
+  font-size: 11px;
+  color: var(--text-secondary);
+}
+.model-settings .integration-list .needs-auth {
+  color: var(--warning);
+}
+.model-settings .configured-providers > button > span {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 2px 8px;
+}
+.model-settings .configured-providers small {
+  margin: 0;
+}
+.model-settings
+  :is(.model-settings-favorites, .integration-list)
+  > button:focus-visible {
+  outline-offset: -2px;
+}
+.connections-settings .hint,
+.provider-directory .hint {
+  color: var(--text-secondary);
+  font-size: 11px;
+  line-height: 1.45;
+  overflow-wrap: anywhere;
+}
+.connections-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+.connections-settings .connections-toolbar h4 {
+  margin: 0;
+}
+.connections-settings .configured-providers {
+  margin: 0 0 4px;
+}
+.connections-settings .add-connection {
+  margin: 6px 0 10px;
+}
+.provider-picker {
+  position: fixed;
+  position-area: bottom span-right;
+  position-try-fallbacks:
+    flip-block,
+    flip-inline,
+    flip-block flip-inline;
+  inset: auto;
+  width: min(320px, calc(100vw - 24px));
+  max-height: calc(100vh - 52px);
+  margin: 6px 0;
+  padding: 8px;
+  overflow: auto;
+  border: 1px solid var(--menu-border);
+  border-radius: var(--radius-lg);
+  background: var(--menu-bg);
+  color: var(--text);
+  box-shadow: var(--shadow-panel);
+}
+.provider-picker .provider-directory {
+  padding: 0;
+}
+.provider-picker .provider-directory-tools {
+  grid-template-columns: minmax(0, 1fr);
+}
+.provider-picker .provider-directory .integration-list {
+  max-height: min(198px, 38vh);
+}
+.model-settings .provider-picker .integration-list > button {
+  min-height: 33px;
+}
+.provider-picker .provider-custom-action {
+  width: 100%;
+  justify-content: flex-start;
+  margin-top: 7px;
+}
+.connections-settings .connection-form {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.connections-settings .connection-form h4 {
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+.connections-settings .connection-form .back-link {
+  min-height: 32px;
+  align-self: flex-start;
+  margin: 0;
+  padding: 3px 4px;
+  border-radius: var(--radius-sm);
+  font-size: 11px;
+  color: var(--text-secondary);
+}
+.connections-settings .connection-form .back-link:hover {
+  background: var(--surface);
+}
+.connections-settings .connection-form .field-row {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+}
+.connections-settings .connection-form .field {
+  gap: 4px;
+  min-width: 0;
+}
+.connections-settings .connection-form input:not([type="checkbox"]) {
+  min-height: 32px;
+  padding: 5px 8px;
+}
+.connections-settings .connection-form :is(.primary, .secondary) {
+  align-self: flex-start;
+  max-width: 100%;
+  white-space: normal;
+}
+.model-settings .provider-catalog-section h4 {
+  margin: 0;
+}
+.model-settings .provider-catalog-toggle {
+  display: flex;
+  align-items: center;
+  text-align: left;
+  width: 100%;
+  min-height: 32px;
+  gap: 6px;
+  padding: 5px 8px;
+  background: var(--surface-recessed);
+  border-radius: var(--radius-md);
+  font-size: 12px;
+  font-weight: 550;
+}
+.provider-catalog-toggle[aria-expanded="true"] > svg {
+  transform: rotate(90deg);
+}
+.model-settings .catalog-total {
+  font-size: 11px;
+  color: var(--text-secondary);
+}
+.provider-directory {
+  padding: 8px 0 0;
+}
+.provider-directory-tools {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, auto);
+  align-items: center;
+  gap: 8px;
+}
+.provider-directory-tools .search-input {
+  min-width: 0;
+  min-height: 32px;
+}
+.provider-directory-tools input {
+  min-width: 0;
+  width: 100%;
+}
+.provider-directory .integration-list {
+  max-height: min(230px, 38vh);
+  overflow: auto;
+  margin-top: 5px;
+  padding-right: 2px;
+}
+.provider-directory > .hint {
+  margin: 9px 0 0;
+}
+.provider-directory-pagination {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 6px;
+  margin-top: 6px;
+}
+.provider-directory-pagination small {
+  margin-right: auto;
+}
+@container (width < 680px) {
+  .model-settings {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 16px;
+  }
+}
+@container (width < 360px) {
+  .provider-directory-tools,
+  .connections-settings .connection-form .field-row {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}

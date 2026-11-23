@@ -1,0 +1,147 @@
+.effort-popover .effort-track.effort-psychedelic {
+  isolation: isolate;
+  background: #080a0e;
+  box-shadow:
+    inset 0 0 0 1px #ffffff20,
+    0 0 9px rgb(51 195 207 / var(--effort-glow));
+  transition: box-shadow 0.25s ease;
+}
+.effort-spectrum {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  border-radius: inherit;
+  pointer-events: none;
+}
+.effort-spectrum-motion {
+  display: block;
+  width: 300%;
+  height: 100%;
+  max-width: none;
+  filter: saturate(var(--effort-chroma)) brightness(var(--effort-light));
+  animation: effort-ribbon-flow var(--effort-period) linear infinite;
+  transition: filter 0.4s ease;
+  will-change: transform;
+}
+.effort-spectrum-shade {
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background: linear-gradient(
+    90deg,
+    #080a0e00 calc(var(--effort-progress) - 5%),
+    #080a0e55 calc(var(--effort-progress) + 10%)
+  );
+  box-shadow:
+    inset 0 1px 4px #080a0e40,
+    inset 0 -1px 0 #ffffff20;
+}
+.effort-psychedelic .effort-dots {
+  inset: 0 10px;
+  z-index: 1;
+}
+.effort-psychedelic .effort-dots i {
+  width: 3px;
+  height: 3px;
+  background: #fff8;
+  box-shadow: 0 0 0 1px #080a0e50;
+  transition: background 0.2s;
+}
+.effort-psychedelic .effort-dots i.passed {
+  background: #f7fafb;
+}
+.effort-orb {
+  position: absolute;
+  z-index: 2;
+  pointer-events: none;
+  top: 50%;
+  left: var(--effort-orb-left);
+  width: 23px;
+  height: 23px;
+  border-radius: 50%;
+  transform: translate(-50%, -50%);
+  background: #f7fafb;
+  box-shadow:
+    0 1px 4px #080a0e80,
+    0 0 5px #fff6;
+  transition:
+    left 0.28s cubic-bezier(0.2, 0.8, 0.2, 1),
+    box-shadow 0.2s,
+    scale 0.2s;
+}
+.effort-orb::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background: conic-gradient(
+    #e6fbff,
+    #33c3cf,
+    #ad348f,
+    #f7fafb,
+    #53d6df,
+    #e6fbff
+  );
+  animation: effort-orb-turn 9s linear infinite;
+}
+.effort-orb::after {
+  content: "";
+  position: absolute;
+  inset: 2px;
+  border-radius: inherit;
+  background: radial-gradient(circle at 33% 25%, #ffffff, #edf7fa 60%, #c9dce7);
+  box-shadow: inset 0 0 0 1px #fff8;
+}
+.effort-popover .effort-psychedelic input {
+  z-index: 3;
+}
+.effort-popover .effort-psychedelic input::-webkit-slider-thumb {
+  background: transparent;
+  opacity: 0;
+  box-shadow: none;
+}
+.effort-popover .effort-psychedelic input:focus-visible {
+  outline-color: #71e5efb3;
+  outline-offset: 3px;
+}
+.effort-psychedelic:hover,
+.effort-psychedelic.is-dragging {
+  box-shadow:
+    inset 0 0 0 1px #bcf6ff4d,
+    0 0 12px rgb(51 195 207 / var(--effort-glow)) !important;
+}
+.effort-psychedelic.is-dragging .effort-orb {
+  transition-duration: 0.08s;
+  scale: 1.08;
+  box-shadow:
+    0 1px 5px #080a0e80,
+    0 0 9px #71e5ef80;
+}
+@keyframes effort-ribbon-flow {
+  to {
+    transform: translateX(calc(-100% / 3));
+  }
+}
+@keyframes effort-orb-turn {
+  to {
+    transform: rotate(360deg);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .effort-spectrum-motion,
+  .effort-orb::before {
+    animation: none !important;
+  }
+  .effort-orb,
+  .effort-spectrum-motion,
+  .effort-psychedelic .effort-dots i {
+    transition: none !important;
+  }
+}
+:root[data-motion="reduced"] .effort-spectrum-motion,
+:root[data-motion="reduced"] .effort-orb::before {
+  animation: none !important;
+}
+:root[data-motion="reduced"] .effort-orb {
+  transition: none !important;
+}

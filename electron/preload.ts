@@ -1,0 +1,113 @@
+import { contextBridge, ipcRenderer } from "electron";
+import type { AppEvent, DesktopApi } from "../shared/types";
+const invoke = (method: string, ...args: unknown[]) =>
+  ipcRenderer.invoke(`forge:${method}`, ...args);
+const methods = [
+  "worktrees",
+  "createWorktree",
+  "removeWorktree",
+  "createWorktreeSession",
+  "finishTask",
+  "agents",
+  "agentRuns",
+  "launchAgent",
+  "startReview",
+  "reviewReport",
+  "fixReview",
+  "checkpoints",
+  "restoreCheckpoint",
+  "taskGitStatus",
+  "taskGitDiff",
+  "openTaskFile",
+  "bootstrap",
+  "addProject",
+  "removeProject",
+  "sectionProject",
+  "archiveProjectChats",
+  "collapseProject",
+  "renameProject",
+  "copyText",
+  "sessions",
+  "createSession",
+  "changeSessionProject",
+  "capabilities",
+  "connectMcp",
+  "addMcp",
+  "localEnvironment",
+  "revealTasks",
+  "attachFolder",
+  "openSession",
+  "refreshSession",
+  "olderMessages",
+  "conversationIndex",
+  "renameSession",
+  "pinSession",
+  "archiveSession",
+  "markSessionUnread",
+  "moveSession",
+  "sectionSession",
+  "forkSession",
+  "copySession",
+  "shareSession",
+  "deleteSession",
+  "openSessionWindow",
+  "send",
+  "stop",
+  "editLastMessage",
+  "setMode",
+  "permission",
+  "replyForm",
+  "cancelQueued",
+  "models",
+  "integrations",
+  "connectKey",
+  "oauthStart",
+  "oauthComplete",
+  "oauthStatus",
+  "oauthCancel",
+  "connectExternal",
+  "customProvider",
+  "customProviderSettings",
+  "providerModels",
+  "attachments",
+  "importAttachments",
+  "preparePdfAttachment",
+  "search",
+  "listMemory",
+  "saveMemory",
+  "deleteMemory",
+  "sessionDiff",
+  "gitStatus",
+  "gitDiff",
+  "gitStage",
+  "gitAction",
+  "saveDraft",
+  "loadDraft",
+  "savePreferences",
+  "retryEngine",
+  "engineUpdateInfo",
+  "checkEngineUpdate",
+  "installEngineUpdate",
+  "switchEngineVersion",
+  "rollbackEngineVersion",
+  "openExternal",
+  "revealProject",
+];
+const api = Object.fromEntries(
+  methods.map((method) => [
+    method,
+    (...args: unknown[]) => invoke(method, ...args),
+  ]),
+) as unknown as DesktopApi;
+api.windowAction = (action) => {
+  ipcRenderer.send("forge:window", action);
+};
+api.onEvent = (listener) => {
+  const handler = (_: Electron.IpcRendererEvent, event: AppEvent) =>
+    listener(event);
+  ipcRenderer.on("forge:event", handler);
+  return () => {
+    ipcRenderer.removeListener("forge:event", handler);
+  };
+};
+contextBridge.exposeInMainWorld("desktop", Object.freeze(api));

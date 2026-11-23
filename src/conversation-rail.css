@@ -1,0 +1,89 @@
+.conversation {
+  container-type: inline-size;
+}
+.conversation-rail {
+  position: absolute;
+  right: 12px;
+  top: 18%;
+  height: 64%;
+  width: 28px;
+  z-index: 3;
+}
+.rail-scroll {
+  height: 100%;
+  overflow-y: auto;
+  scrollbar-width: none;
+  overscroll-behavior: contain;
+}
+.rail-marker {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 28px;
+  height: 20px;
+  display: grid;
+  place-items: center;
+  border-radius: 4px;
+}
+.rail-marker > span {
+  width: 12px;
+  height: 2px;
+  background: var(--text-muted);
+  border-radius: 2px;
+  transition:
+    width 120ms ease,
+    background 120ms ease;
+}
+.rail-marker[aria-current],
+.rail-marker:hover {
+  background: var(--surface-hover);
+}
+.rail-marker[aria-current] > span,
+.rail-marker:hover > span,
+.rail-marker:focus-visible > span {
+  width: 20px;
+  background: var(--text);
+}
+.rail-preview {
+  position: fixed;
+  right: 52px;
+  width: min(300px, 60vw);
+  padding: 12px 14px;
+  border: 1px solid var(--menu-border);
+  border-radius: 10px;
+  background: var(--menu-bg);
+  box-shadow: var(--shadow-panel);
+  pointer-events: none;
+}
+.rail-preview small {
+  color: var(--text-muted);
+  font-size: 10px;
+}
+.rail-preview p {
+  margin-top: 6px;
+  font-size: 12px;
+  line-height: 1.5;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  display: -webkit-box;
+  -webkit-line-clamp: 5;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+.rail-retry {
+  height: 24px;
+  width: 28px;
+}
+@container (max-width: 940px) {
+  .conversation-rail {
+    display: none;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .rail-marker > span {
+    transition: none;
+  }
+}
+[data-animations="false"] .rail-marker > span {
+  transition: none;
+}

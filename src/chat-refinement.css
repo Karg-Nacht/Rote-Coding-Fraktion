@@ -1,0 +1,187 @@
+.workspace-header:has(.rcf-context) {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto auto;
+  grid-template-rows: auto auto;
+  column-gap: 14px;
+  row-gap: 3px;
+  height: 74px;
+  min-height: 74px;
+  padding-block: 12px;
+  position: relative;
+  z-index: 5;
+}
+.workspace-header:has(.rcf-context) .workspace-title {
+  grid-column: 1;
+  grid-row: 1;
+}
+.workspace-header .rcf-context {
+  display: contents;
+}
+.workspace-header .rcf-location {
+  grid-column: 1;
+  grid-row: 2;
+  width: fit-content;
+  max-width: 100%;
+  min-width: 0;
+  padding: 1px 0;
+  gap: 7px;
+  justify-self: start;
+  color: var(--text-secondary);
+  font-size: 11px;
+}
+.workspace-header .rcf-location > svg {
+  flex-shrink: 0;
+}
+.workspace-header .rcf-branch {
+  max-width: 150px;
+  color: var(--text-muted);
+}
+.workspace-header .rcf-task-actions {
+  grid-column: 2;
+  grid-row: 1 / 3;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  color: var(--text-secondary);
+  font-size: 11px;
+}
+.workspace-header .rcf-task-actions button {
+  padding: 7px 6px;
+  border-radius: 6px;
+}
+.workspace-header .rcf-task-actions button:hover,
+.workspace-header .rcf-metrics summary:hover {
+  background: var(--surface-hover);
+}
+.workspace-header .rcf-controls-button {
+  margin: 0;
+  color: var(--text);
+}
+.workspace-header .rcf-metrics {
+  margin: 0;
+}
+.workspace-header .rcf-metrics summary {
+  padding: 7px;
+  border-radius: 6px;
+}
+.workspace-header .rcf-metrics summary::-webkit-details-marker {
+  display: none;
+}
+.workspace-header:has(.rcf-context) .header-actions {
+  grid-column: 3;
+  grid-row: 1 / 3;
+  padding-left: 0;
+}
+.session-menu.floating-panel {
+  min-width: 230px;
+}
+.rcf-project-menu {
+  width: min(350px, calc(100vw - 32px));
+}
+.rcf-project-menu strong,
+.rcf-project-menu code,
+.rcf-project-menu small {
+  display: block;
+  margin: 8px 9px;
+}
+.rcf-project-menu strong {
+  font-size: 12px;
+}
+.rcf-project-menu code {
+  white-space: normal;
+  overflow-wrap: anywhere;
+  font-size: 11px;
+  line-height: 1.6;
+  color: var(--text-secondary);
+}
+.rcf-project-menu small {
+  color: var(--text-muted);
+}
+.conversation {
+  --chat-column-width: 806px;
+  isolation: isolate;
+}
+.timeline-column,
+.composer-area {
+  max-width: var(--chat-column-width, 806px);
+}
+.chat-gutter {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: max(0px, calc((100% - var(--chat-column-width)) / 2 - 32px));
+  max-width: 200px;
+  overflow: hidden;
+  pointer-events: none;
+  user-select: none;
+  z-index: 0;
+  mask-image:
+    linear-gradient(
+      to right,
+      transparent,
+      #000 24px,
+      #000 calc(100% - 48px),
+      transparent
+    ),
+    linear-gradient(
+      to bottom,
+      transparent,
+      #000 48px,
+      #000 calc(100% - 100px),
+      transparent
+    );
+  mask-composite: intersect;
+}
+.chat-gutter-left {
+  left: max(0px, calc((100% - var(--chat-column-width)) / 2 - 232px));
+}
+.chat-gutter-right {
+  right: max(0px, calc((100% - var(--chat-column-width)) / 2 - 232px));
+  transform: scaleX(-1);
+}
+.chat-gutter-dots {
+  position: absolute;
+  inset: -16px 0;
+  background-image: radial-gradient(
+    circle,
+    color-mix(in srgb, var(--text-secondary) 32%, transparent) 0.75px,
+    transparent 1px
+  );
+  background-size: 16px 16px;
+  animation: chat-grid-drift 32s linear infinite;
+}
+.conversation > .timeline-area,
+.conversation > .welcome,
+.conversation > .loading-view {
+  position: relative;
+  z-index: 1;
+}
+@keyframes chat-grid-drift {
+  from {
+    transform: translateY(0);
+  }
+  to {
+    transform: translateY(16px);
+  }
+}
+:root[data-motion="reduced"] .chat-gutter-dots {
+  animation: none;
+  transform: none;
+}
+@media (prefers-reduced-motion: reduce) {
+  .chat-gutter-dots {
+    animation: none;
+    transform: none;
+  }
+}
+@media (max-width: 850px) {
+  .workspace-header:has(.rcf-context) {
+    column-gap: 6px;
+  }
+  .workspace-header .rcf-branch {
+    display: none;
+  }
+  .workspace-header .rcf-task-actions {
+    gap: 3px;
+  }
+}

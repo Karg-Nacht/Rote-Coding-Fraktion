@@ -1,0 +1,135 @@
+{
+  "name": "rcf",
+  "version": "0.2.3",
+  "private": true,
+  "description": "Rote Coding Fraktion — desktop workspace powered by OpenCode V2",
+  "author": "RCF contributors",
+  "license": "MIT",
+  "type": "module",
+  "main": "dist-electron/main.js",
+  "scripts": {
+    "dev": "node scripts/dev.mjs",
+    "setup": "node scripts/setup.mjs",
+    "build": "node scripts/build-icons.mjs && tsc --noEmit && vite build && node scripts/build-main.mjs",
+    "start": "electron .",
+    "test": "node scripts/run-ts.mjs --test",
+    "test:engine": "node scripts/run-ts.mjs scripts/engine-smoke.ts",
+    "test:engine-manager-ui": "node scripts/engine-manager-ui.mjs",
+    "test:desktop": "node scripts/desktop-smoke.mjs",
+    "test:e2e": "node scripts/desktop-e2e.mjs",
+    "test:followup": "node scripts/desktop-followup.mjs",
+    "test:visual": "node scripts/visual-style-qa.mjs",
+    "test:omniroute": "node scripts/omniroute-ui.mjs",
+    "test:edit": "node scripts/edit-message-ui.mjs",
+    "test:sidebar": "node scripts/sidebar-ui.mjs",
+    "test:chat-actions": "node scripts/chat-actions-ui.mjs",
+    "test:project-menu": "node scripts/project-menu-ui.mjs",
+    "test:run-details": "node scripts/run-details-ui.mjs",
+    "test:composer": "node scripts/composer-ui.mjs",
+    "test:effort-animation": "node scripts/effort-animation-ui.mjs",
+    "test:composer-context": "node scripts/composer-context-ui.mjs",
+    "package": "npm run build && node scripts/package.mjs",
+    "package:dir": "npm run build && node scripts/package.mjs --dir",
+    "test:settings": "node scripts/settings-ui.mjs",
+    "test:search-archive": "node scripts/search-archive-ui.mjs",
+    "test:recents-language": "node scripts/recents-language-ui.mjs",
+    "test:workspaces": "node scripts/workspaces-ui.mjs",
+    "test:multimodal": "node scripts/multimodal-ui.mjs",
+    "test:chat-isolation": "node scripts/run-ts.mjs scripts/chat-isolation-smoke.ts",
+    "test:vision-live": "node scripts/run-ts.mjs scripts/vision-live-check.ts",
+    "test:retry": "node scripts/run-ts.mjs scripts/retry-smoke.ts",
+    "typecheck": "tsc --noEmit",
+    "test:rcf": "node scripts/run-ts.mjs scripts/rcf-integration.ts",
+    "test:rcf-ui": "node scripts/rcf-ui.mjs",
+    "build:icons": "node scripts/build-icons.mjs"
+  },
+  "dependencies": {
+    "@napi-rs/canvas": "^1.1.1",
+    "@opencode/client": "2.3.0",
+    "@tanstack/react-virtual": "^3.13.12",
+    "lucide-react": "^0.468.0",
+    "pdfjs-dist": "^6.5.438",
+    "react": "^19.2.0",
+    "react-dom": "^19.2.0",
+    "react-markdown": "^10.1.0",
+    "remark-gfm": "^4.0.1",
+    "shiki": "^3.20.0",
+    "zod": "^4.1.12",
+    "zustand": "^5.0.8"
+  },
+  "devDependencies": {
+    "@opencode/cli": "2.3.0",
+    "@types/node": "^22.19.0",
+    "@types/react": "^19.2.0",
+    "@types/react-dom": "^19.2.0",
+    "@vitejs/plugin-react": "^5.1.0",
+    "electron": "45.3.2",
+    "electron-builder": "^26.0.12",
+    "esbuild": "^0.25.12",
+    "playwright": "^1.56.1",
+    "prettier": "^3.10.1",
+    "typescript": "^5.9.3",
+    "vite": "^7.2.2"
+  },
+  "build": {
+    "appId": "local.forge.agent",
+    "productName": "Rote Coding Fraktion",
+    "asar": true,
+    "electronDist": "node_modules/electron/dist",
+    "directories": {
+      "output": "release"
+    },
+    "files": [
+      "dist/**",
+      "dist-electron/**",
+      "package.json",
+      "LICENSE",
+      "THIRD_PARTY_NOTICES.md"
+    ],
+    "extraResources": [
+      {
+        "from": "node_modules/@opencode/cli/bin/opencode.exe",
+        "to": "engine/opencode.exe"
+      },
+      {
+        "from": "THIRD_PARTY_NOTICES.md",
+        "to": "THIRD_PARTY_NOTICES.md"
+      },
+      {
+        "from": "resources/OPENCODE-LICENSE",
+        "to": "engine/LICENSE"
+      },
+      {
+        "from": "resources/third-party-licenses",
+        "to": "third-party-licenses"
+      },
+      {
+        "from": "resources/rcf.ico",
+        "to": "rcf.ico"
+      },
+      {
+        "from": "resources/rcf-light.ico",
+        "to": "rcf-light.ico"
+      }
+    ],
+    "win": {
+      "target": [
+        "portable",
+        "nsis"
+      ],
+      "signExecutable": false,
+      "icon": "resources/rcf.ico",
+      "executableName": "Rote Coding Fraktion"
+    },
+    "portable": {
+      "artifactName": "RCF-${version}-${arch}-Portable.${ext}"
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "artifactName": "RCF-${version}-${arch}-Setup.${ext}"
+    },
+    "artifactName": "RCF-${version}-${arch}.${ext}"
+  }
+}

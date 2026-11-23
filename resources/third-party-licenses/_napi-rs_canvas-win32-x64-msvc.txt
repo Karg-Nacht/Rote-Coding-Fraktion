@@ -1,0 +1,4 @@
+@napi-rs/canvas-win32-x64-msvc 1.1.1
+License: MIT
+Repository: git+https://github.com/Brooooooklyn/canvas.git
+

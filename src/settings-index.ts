@@ -8,6 +8,7 @@ import {
   Settings2,
   ShieldCheck,
 } from "lucide-react";
+import { PRODUCT_VERSION } from "../shared/branding";
 export const categories = [
   {
     id: "general",
@@ -249,7 +250,8 @@ export const parameters: Parameter[] = [
     id: "version",
     category: "about",
     title: "Версия Rote Coding Fraktion",
-    description: "Версия приложения 0.2.3.",
+    description: "Установленная версия приложения.",
+    keywords: PRODUCT_VERSION,
   },
   {
     id: "licenses",

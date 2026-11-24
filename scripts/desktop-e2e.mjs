@@ -2,6 +2,7 @@ import { _electron as electron } from "playwright";
 import { Service } from "@opencode/client/service";
 import { OpenCode } from "@opencode/client";
 import fs from "node:fs/promises";
+import http from "node:http";
 import path from "node:path";
 import assert from "node:assert/strict";
 import { execFileSync } from "node:child_process";
@@ -21,7 +22,17 @@ execFileSync("git", ["init"], {
   stdio: "ignore",
 });
 const errors = [];
-let app;
+const live = process.argv.includes("--live");
+const fixture = { providerID: "e2e-fixture", id: "desktop-fixture" };
+const toolSteps = [
+  ["read", { path: "input.txt" }],
+  ["write", { path: "result.txt", content: "HELLO FORGE\n" }],
+  [
+    "shell",
+    { command: "node check.mjs", description: "Verify the fixture result" },
+  ],
+];
+let app, provider;
 const launch = async () => {
   const launched = await electron.launch({
     args: [process.env.FORGE_PACKAGED ? "" : "."].filter(Boolean),
@@ -39,36 +50,113 @@ const launch = async () => {
   return [launched, page];
 };
 try {
+  if (!live) {
+    provider = http.createServer(async (request, response) => {
+      if (!request.url?.endsWith("/chat/completions"))
+        return void response.writeHead(404).end();
+      let raw = "";
+      for await (const chunk of request) raw += chunk;
+      const body = JSON.parse(raw);
+      const available = new Set(
+        (body.tools ?? []).map((tool) => tool.function?.name),
+      );
+      const completed = new Set(
+        body.messages
+          .filter((message) => message.role === "tool")
+          .map((message) => message.tool_call_id),
+      );
+      const next = available.has("read")
+        ? toolSteps.find(([name]) => !completed.has(`e2e-${name}`))
+        : undefined;
+      response.writeHead(200, { "Content-Type": "text/event-stream" });
+      const emit = (delta, finish_reason = null) =>
+        response.write(
+          `data: ${JSON.stringify({ id: "e2e", object: "chat.completion.chunk", created: 1, model: body.model, choices: [{ index: 0, delta, finish_reason }] })}\n\n`,
+        );
+      if (next) {
+        const [name, input] = next;
+        assert.ok(
+          available.has(name),
+          `The real engine must advertise ${name} before the test can request it`,
+        );
+        emit({
+          role: "assistant",
+          tool_calls: [
+            {
+              index: 0,
+              id: `e2e-${name}`,
+              type: "function",
+              function: { name, arguments: JSON.stringify(input) },
+            },
+          ],
+        });
+        emit({}, "tool_calls");
+      } else {
+        emit({ role: "assistant", content: "Desktop fixture complete" });
+        emit({}, "stop");
+      }
+      response.end("data: [DONE]\n\n");
+    });
+    await new Promise((resolve) => provider.listen(0, "127.0.0.1", resolve));
+  }
   let page;
   [app, page] = await launch();
+  if (provider)
+    await page.evaluate(
+      async ({ fixture, port }) => {
+        await window.desktop.customProvider({
+          id: fixture.providerID,
+          name: "Desktop E2E loopback fixture",
+          model: fixture.id,
+          runtime: "compatible",
+          baseUrl: `http://127.0.0.1:${port}/v1`,
+          key: "desktop-e2e-fixture-only",
+          images: false,
+          tools: true,
+        });
+        await window.desktop.savePreferences({ engineAutoCheck: false });
+      },
+      { fixture, port: provider.address().port },
+    );
   await app.evaluate(({ dialog }, project) => {
     dialog.showOpenDialog = async () => ({
       canceled: false,
       filePaths: [project],
     });
   }, projectDir);
-  await page.getByRole("button", { name: "Выбрать проект", exact: true }).click();
-  await page.getByRole("button", { name: "Открыть другую папку…", exact: true }).click();
+  await page
+    .getByRole("button", { name: "Выбрать проект", exact: true })
+    .click();
+  await page
+    .getByRole("button", { name: "Открыть другую папку…", exact: true })
+    .click();
   await page
     .getByRole("button", { name: "Выбрать модель", exact: true })
     .click();
   const models = await page.evaluate(() => window.desktop.models());
+  const targetModel = live
+    ? { providerID: "opencode", id: "deepseek-v4.1-flash-free" }
+    : fixture;
   const free = models.find(
-    (m) => m.providerID === "opencode" && m.id === "deepseek-v4.1-flash-free",
+    (m) => m.providerID === targetModel.providerID && m.id === targetModel.id,
   );
-  assert.ok(free, "Free test model must exist; do not substitute a paid model");
-  await page.getByRole("menuitem", { name: /Найти и закрепить/ }).click();
+  assert.ok(free, "The designated fixture model must be available");
   await page
-    .locator(".model-option")
-    .filter({ hasText: free.name })
-    .locator("button")
-    .first()
+    .getByRole("button", { name: "Выбрать другую модель", exact: true })
     .click();
-  await page
-    .getByRole("dialog", { name: "Каталог моделей" })
-    .getByRole("button", { name: "Закрыть" })
+  await page.getByRole("menuitem", { name: /Найти и закрепить/ }).click();
+  const catalog = page.getByRole("dialog", { name: "Каталог моделей" });
+  await catalog.getByRole("combobox", { name: "Поиск моделей" }).fill(free.id);
+  await catalog
+    .getByRole("button", { name: `Закрепить модель ${free.name}`, exact: true })
+    .click();
+  await catalog
+    .getByRole("button", { name: "Закрыть каталог моделей", exact: true })
     .click();
   await page.getByRole("button", { name: "Выбрать модель" }).click();
+  await page
+    .getByRole("button", { name: "Выбрать другую модель", exact: true })
+    .click();
   await page.getByRole("menuitem").filter({ hasText: free.name }).click();
   await page
     .getByRole("textbox", { name: "Сообщение агенту" })
@@ -127,6 +215,9 @@ try {
     .getByRole("button", { name: "Действия с задачей", exact: true })
     .click();
   await page.getByRole("button", { name: "Закрепить", exact: true }).click();
+  await page
+    .getByRole("button", { name: "Действия с задачей", exact: true })
+    .click();
   await page
     .getByRole("button", { name: "Изменения проекта", exact: true })
     .click();
@@ -267,4 +358,8 @@ try {
   );
 } finally {
   if (app) await app.close();
+  if (provider) {
+    provider.closeAllConnections();
+    await new Promise((resolve) => provider.close(resolve));
+  }
 }

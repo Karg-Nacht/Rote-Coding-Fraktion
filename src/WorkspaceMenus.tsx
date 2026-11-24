@@ -13,6 +13,7 @@ import {
 import { FloatingPanel } from "./components";
 import { api, attempt, switchWorkspace, useApp } from "./store";
 import { BrandIcon } from "./BrandIcon";
+import { PRODUCT_VERSION } from "../shared/branding";
 
 export function WorkspaceSwitcher() {
   useLanguage();
@@ -114,7 +115,7 @@ export function ApplicationMenu({ onArchive }: { onArchive: () => void }) {
           label={tr("Меню приложения")}
           className="application-menu"
         >
-          <div className="menu-heading">Rote Coding Fraktion · 0.2.3</div>
+          <div className="menu-heading">Rote Coding Fraktion · {PRODUCT_VERSION}</div>
           <button
             role="menuitem"
             onClick={() => {

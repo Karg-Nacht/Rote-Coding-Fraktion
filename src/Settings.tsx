@@ -1,5 +1,6 @@
 import { tr, useLanguage, trf } from "./i18n";
 import { BrandIcon } from "./BrandIcon";
+import { PRODUCT_VERSION } from "../shared/branding";
 import { useEffect, useRef, useState } from "react";
 import {
   ArrowLeft,
@@ -287,7 +288,7 @@ export function Settings({
         <div className="settings-sidebar-footer">
           <span className={`status-dot ${engine.state}`} />
           OpenCode · {engineLabel}
-          <small>Rote Coding Fraktion 0.2.3</small>
+          <small>Rote Coding Fraktion {PRODUCT_VERSION}</small>
         </div>
       </nav>
       <div className="settings-content" ref={scroll}>
@@ -582,7 +583,7 @@ export function Settings({
                     <div>
                       <h3>Rote Coding Fraktion</h3>
                       <p>
-                        {tr("Версия 0.2.3 · локальная среда для работы с ИИ")}
+                        {trf`Версия ${PRODUCT_VERSION} · локальная среда для работы с ИИ`}
                       </p>
                     </div>
                   </div>

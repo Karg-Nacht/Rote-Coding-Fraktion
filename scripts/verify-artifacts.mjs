@@ -6,6 +6,12 @@ import { listPackage, extractFile } from "@electron/asar";
 import assert from "node:assert/strict";
 import * as PE from "pe-library";
 import { Data, Resource } from "resedit";
+import {
+  appName,
+  metadata,
+  portableName,
+  setupName,
+} from "./windows-artifacts.mjs";
 
 const archive = "release/win-unpacked/resources/app.asar";
 const entries = listPackage(archive).map((file) =>
@@ -17,14 +23,28 @@ for (const file of ["dist-electron/main.js", "dist-electron/preload.cjs"])
     extractFile(archive, file).toString(),
     await fs.readFile(file, "utf8"),
   );
-const metadata = JSON.parse(extractFile(archive, "package.json").toString());
-assert.equal(metadata.name, "rcf");
-assert.equal(metadata.version, "0.2.1");
+const packaged = JSON.parse(extractFile(archive, "package.json").toString());
+assert.equal(packaged.name, metadata.name);
+assert.equal(packaged.version, metadata.version);
+assert.equal(
+  packaged.dependencies["@opencode/client"],
+  metadata.dependencies["@opencode/client"],
+);
 assert.equal(
   entries.some((file) =>
-    /^(\.runtime|\.cache|test-results|\.env)(\/|$)/.test(file),
+    /(?:^|\/)(?:\.git|\.runtime|\.cache|test-results|\.env(?:\.[^/]*)?|forge\.sqlite(?:-wal|-shm)?|credentials\.json)(?:\/|$)/i.test(
+      file,
+    ),
   ),
   false,
+);
+assert.ok(
+  entries.every((file) =>
+    /^(?:dist|dist-electron|node_modules)(?:\/|$)|^(?:package\.json|LICENSE(?:\.txt)?|THIRD_PARTY_NOTICES\.md)$/.test(
+      file,
+    ),
+  ),
+  "App archive contains only production files and dependencies",
 );
 assert.equal(
   extractFile(archive, "dist/index.html").toString(),
@@ -47,12 +67,32 @@ const expectedIcons = Data.IconFile.from(
 ).icons;
 const executableIcons = [];
 for (const file of [
-  "release/win-unpacked/Rote Coding Fraktion.exe",
-  "release/RCF-0.2.1-x64-Portable.exe",
-  "release/RCF-0.2.1-x64-Setup.exe",
+  `release/win-unpacked/${appName}`,
+  `release/${portableName}`,
+  `release/${setupName}`,
 ]) {
-  const resources = PE.NtExecutableResource.from(
-    PE.NtExecutable.from(await fs.readFile(file)),
+  const executable = PE.NtExecutable.from(await fs.readFile(file));
+  if (file.includes("win-unpacked"))
+    assert.equal(
+      executable.newHeader.fileHeader.machine,
+      0x8664,
+      "Electron payload is Windows x64",
+    );
+  const resources = PE.NtExecutableResource.from(executable);
+  const versions = Resource.VersionInfo.fromEntries(resources.entries).flatMap(
+    (info) =>
+      info
+        .getAllLanguagesForStringValues()
+        .map((language) => info.getStringValues(language)),
+  );
+  const expectedVersions = [metadata.version, `${metadata.version}.0`];
+  assert.ok(
+    versions.some(
+      (strings) =>
+        expectedVersions.includes(strings.ProductVersion) &&
+        expectedVersions.includes(strings.FileVersion),
+    ),
+    `${file} must advertise ${metadata.version}`,
   );
   const groups = Resource.IconGroupEntry.fromEntries(resources.entries);
   const match = groups.some((group) => {
@@ -85,16 +125,30 @@ const hashFile = async (file) => {
 const bundledEngine = await hashFile(
   "release/win-unpacked/resources/engine/opencode.exe",
 );
+const engine = PE.NtExecutable.from(
+  await fs.readFile("release/win-unpacked/resources/engine/opencode.exe"),
+  { ignoreCert: true },
+);
+assert.equal(
+  engine.newHeader.fileHeader.machine,
+  0x8664,
+  "Bundled OpenCode is Windows x64",
+);
 assert.equal(
   bundledEngine,
   await hashFile("node_modules/@opencode/cli/bin/opencode.exe"),
 );
 const artifacts = [];
-for (const name of ["RCF-0.2.1-x64-Portable.exe", "RCF-0.2.1-x64-Setup.exe"]) {
+for (const name of [portableName, setupName]) {
   const file = path.join("release", name),
     stat = await fs.stat(file);
   artifacts.push({ name, bytes: stat.size, sha256: await hashFile(file) });
+  assert.ok(
+    stat.isFile() && stat.size > 0,
+    `${name} must be a non-empty executable`,
+  );
 }
+await fs.mkdir("test-results", { recursive: true });
 await fs.writeFile(
   "test-results/artifact-verification.json",
   JSON.stringify(

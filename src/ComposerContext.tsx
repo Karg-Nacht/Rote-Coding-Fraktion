@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, type ReactNode } from "react";
 import {
   Check,
   ChevronDown,
@@ -20,7 +20,7 @@ import { ComposerSurface } from "./ComposerSurface";
 import type { Project } from "../shared/types";
 import "./composer-context.css";
 
-export function ComposerContext({ disabled }: { disabled: boolean }) {
+export function ComposerContext({ disabled, children }: { disabled: boolean; children?: ReactNode }) {
   useLanguage();
   const { projects, preferences, snapshot } = useApp();
   const [open, setOpen] = useState<"environment" | "project">();
@@ -147,6 +147,7 @@ export function ComposerContext({ disabled }: { disabled: boolean }) {
           </button>
         )}
       </div>
+      {children}
       <ComposerSurface
         open={open === "environment"}
         anchor={environment}

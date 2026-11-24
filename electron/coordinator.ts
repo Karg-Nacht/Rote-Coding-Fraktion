@@ -42,6 +42,14 @@ import { LiveProjection } from "./live";
 import { safeExternal } from "./security";
 import { sameDirectory } from "./worktrees";
 import { sessionMetrics } from "./metrics";
+import { buildProjectEvidence, ProjectContextService } from "./project-context";
+import {
+  PROJECT_CONTEXT_HOOK,
+  PROJECT_CONTEXT_METADATA,
+  PROJECT_CONTEXT_CHAT,
+  projectContextHookPath,
+  ProjectContextRelay,
+} from "./project-context-relay";
 
 const providerRuntimes = new Map<string, SavedProviderSettings["runtime"]>([
   ["@opencode/ai/providers/openai-compatible", "compatible"],
@@ -67,12 +75,16 @@ export class SessionCoordinator {
   private liveTimers = new Map<string, ReturnType<typeof setTimeout>>();
   private searchController?: AbortController;
   private retryStopped = new Set<string>();
+  readonly projectContext: ProjectContextService;
+  private projectContextRelay = new ProjectContextRelay();
   constructor(
     readonly storage: LocalStorage,
     readonly engine: OpenCodeSupervisor,
     readonly media: MediaService,
     private emit: (event: AppEvent) => void,
-  ) {}
+  ) {
+    this.projectContext = new ProjectContextService(storage, engine.redactor);
+  }
   async start() {
     if (this.listenTask) return;
     this.stopped = false;
@@ -83,6 +95,8 @@ export class SessionCoordinator {
   }
   async close() {
     this.stopped = true;
+    this.projectContext.close();
+    this.projectContextRelay.close();
     this.controller?.abort();
     this.searchController?.abort();
     for (const timer of [
@@ -616,6 +630,44 @@ export class SessionCoordinator {
         key,
       });
   }
+  private assertContextProject(info: SessionInfo, projectId: string) {
+    const project = this.projectFor(info);
+    if (
+      workspaceOf(info) !== "chat" ||
+      info.metadata?.rcfReviewSource ||
+      info.metadata?.rcfReader ||
+      !project ||
+      project.id !== projectId ||
+      project.managed
+    )
+      throw new Error("Контекст доступен для выбранного проекта в Chat Faction.");
+  }
+  private async assertChatHook(info: SessionInfo, client: OpenCodeClient) {
+    const plugins = await client.plugin.list({ location: info.location });
+    const expected = projectContextHookPath(this.engine.env.XDG_CONFIG_HOME);
+    if (!plugins.data.some((plugin) =>
+      plugin.id === PROJECT_CONTEXT_HOOK &&
+      plugin.state.status === "active" &&
+      plugin.source.type === "local" &&
+      sameDirectory(plugin.source.path, expected),
+    ))
+      throw new Error("Движок не готов принять контекст проекта. Перезапустите OpenCode и повторите попытку.");
+  }
+  async prepareProjectContext(
+    projectId: string,
+    question: string,
+    requestId: string,
+    sessionId?: string,
+  ) {
+    return this.projectContext.prepare(projectId, question, requestId, sessionId, async () => {
+      if (sessionId) this.assertContextProject(await this.own(sessionId), projectId);
+      else {
+        const preferences = this.storage.preferences();
+        if (preferences.workspace !== "chat" || preferences.projectId !== projectId)
+          throw new Error("Контекст доступен для выбранного проекта в Chat Faction.");
+      }
+    });
+  }
   async send(
     id: string,
     text: string,
@@ -628,6 +680,9 @@ export class SessionCoordinator {
       client = await this.client();
     if (info.metadata?.rcfReviewSource || info.metadata?.rcfReader)
       throw new Error("Ограниченная сессия принимает только исходное задание.");
+    const context = options?.projectContext;
+    const chat = workspaceOf(info) === "chat";
+    if (context) this.assertContextProject(info, context.projectId);
     if (
       workspaceOf(info) === "work" &&
       !(options?.planning ?? info.metadata?.forgePlanning === true)
@@ -660,7 +715,9 @@ export class SessionCoordinator {
       throw new Error(
         "Сначала остановите ответ агента, чтобы сменить режим планирования.",
       );
-    const skillIds = [...new Set(options?.skills ?? [])];
+    const skillIds = workspaceOf(info) === "chat"
+      ? []
+      : [...new Set(options?.skills ?? [])];
     if (skillIds.length) {
       const availableSkills = await client.skill.list({
         location: info.location,
@@ -674,6 +731,11 @@ export class SessionCoordinator {
           "Выбранный навык недоступен в текущем проекте. Обновите список навыков.",
         );
     }
+    let evidence: string | undefined;
+    if (chat) await this.assertChatHook(info, client);
+    if (context) evidence = buildProjectEvidence(
+      this.projectContext.take(context.requestId, context.projectId, text, id),
+    );
     // Operations within this method are serialized by Main IPC to avoid mode/model races.
     await client.session.update({
       sessionID: id,
@@ -692,14 +754,31 @@ export class SessionCoordinator {
       client,
     );
     this.retryStopped.delete(id);
-    await client.session.prompt({
-      sessionID: id,
-      text,
-      files,
-      delivery: "queue",
-      skills: skillIds.map((id) => ({ id })),
-      metadata: { forgePlanning: planning },
-    });
+    const lease = evidence ? await this.projectContextRelay.acquire(id, evidence) : undefined;
+    try {
+      await client.session.prompt({
+        sessionID: id,
+        text,
+        files,
+        delivery: "queue",
+        skills: skillIds.map((id) => ({ id })),
+        metadata: {
+          forgePlanning: planning,
+          ...(chat ? { [PROJECT_CONTEXT_CHAT]: true } : {}),
+          ...(lease ? { [PROJECT_CONTEXT_METADATA]: { port: lease.port, token: lease.token } } : {}),
+        },
+      });
+    } catch (error) {
+      lease?.release();
+      throw error;
+    }
+    if (lease) {
+      // The lease expires if the engine cannot confirm idleness.
+      void client.experimental.session.wait(
+        { sessionID: id },
+        { signal: AbortSignal.timeout(10 * 60_000) },
+      ).then(lease.release, () => {});
+    }
     this.changed(id);
   }
   async capabilities(projectId?: string): Promise<Capabilities> {
@@ -731,7 +810,7 @@ export class SessionCoordinator {
           : [],
       plugins:
         plugins.status === "fulfilled"
-          ? plugins.value.data.map((p, i) => ({
+          ? plugins.value.data.filter((p) => p.id !== PROJECT_CONTEXT_HOOK).map((p, i) => ({
               id: p.id ?? `plugin-${i + 1}`,
               status: p.state.status,
             }))
@@ -761,6 +840,8 @@ export class SessionCoordinator {
   ): Promise<EditMessageResult> {
     const info = await this.own(id);
     const client = await this.client();
+    const chat = workspaceOf(info) === "chat";
+    if (chat) await this.assertChatHook(info, client);
     const [active, inbox, page, available] = await Promise.all([
       client.session.active(),
       client.session.inbox.list({ sessionID: id }),
@@ -838,13 +919,17 @@ export class SessionCoordinator {
       this.snapshots.delete(id);
       this.live.clearSession(id);
       this.retryStopped.delete(id);
+      const metadata: typeof last.metadata = chat
+        ? { ...last.metadata, [PROJECT_CONTEXT_CHAT]: true }
+        : last.metadata ? { ...last.metadata } : undefined;
+      if (metadata) delete metadata[PROJECT_CONTEXT_METADATA];
       await client.session.prompt({
         sessionID: id,
         text,
         files,
-        agents: workspaceOf(info) === "chat" ? undefined : last.agents,
-        skills: last.skills,
-        metadata: last.metadata,
+        agents: chat ? undefined : last.agents,
+        skills: chat ? undefined : last.skills,
+        metadata,
         delivery: "queue",
       });
       return { sent: true };

@@ -23,6 +23,7 @@ import {
 import { IconButton, Modal } from "./components";
 import { ComposerModeControl, ComposerModelControl } from "./ComposerControls";
 import { ComposerContext } from "./ComposerContext";
+import { ProjectIntelligence, useProjectIntelligence } from "./ProjectIntelligence";
 import { ComposerAddMenu } from "./ComposerAddMenu";
 import {
   ATTACHMENT_LIMITS,
@@ -51,6 +52,10 @@ export function Composer() {
   const input = useRef<HTMLTextAreaElement>(null);
   const composerAnchor = useRef<HTMLDivElement>(null);
   const workspace = preferences.workspace ?? "work";
+  const contextProject = workspace === "chat" ? projects.find(
+    (project) => project.id === preferences.projectId && !project.managed,
+  ) : undefined;
+  const intelligence = useProjectIntelligence(contextProject?.id, text.trim(), snapshot?.session.id);
   const key = useRef(
     preferences.sessionId ?? `new:${workspace}:composer`,
   ).current;
@@ -196,6 +201,8 @@ export function Composer() {
       (!text.trim() && !files.length) ||
       sending ||
       attachmentBusy ||
+      intelligence.status.kind === "preparing" ||
+      (intelligence.enabled && !text.trim()) ||
       !preferences.model ||
       !selected?.enabled ||
       engine.state !== "ready" || engine.compatibility?.canSend === false
@@ -218,6 +225,16 @@ export function Composer() {
     setSending(true);
     const draft = text.trim() || tr("Проанализируй прикреплённые файлы.");
     try {
+      let projectContext;
+      if (intelligence.enabled && contextProject) {
+        const prepared = await intelligence.prepare();
+        if (!prepared) return;
+        if (!prepared.result.files) {
+          intelligence.fail(new Error("Подходящие фрагменты не найдены. Уточните вопрос или выключите контекст проекта."));
+          return;
+        }
+        projectContext = { projectId: contextProject.id, requestId: prepared.requestId };
+      }
       const session =
         snapshot?.session ??
         (await api.createSession(
@@ -232,8 +249,9 @@ export function Composer() {
         preferences.model,
         workspace === "chat" ? "cautious" : preferences.mode,
         files.map((f) => f.id),
-        { planning: workspace !== "chat" && planning, skills },
+        { planning: workspace !== "chat" && planning, skills, projectContext },
       );
+      if (projectContext) intelligence.cancel();
       textValue.current = "";
       setText("");
       setFiles([]);
@@ -253,7 +271,8 @@ export function Composer() {
       }
       await refreshSessions();
     } catch (error) {
-      report(error);
+      if (intelligence.enabled) intelligence.fail(error);
+      else report(error);
     } finally {
       setSending(false);
       input.current?.focus();
@@ -401,6 +420,8 @@ export function Composer() {
     !selected.image;
   const canSend =
     (text.trim() || files.length) &&
+    (!intelligence.enabled || text.trim()) &&
+    intelligence.status.kind !== "preparing" &&
     selected?.enabled &&
     engine.state === "ready" &&
     engine.compatibility?.canSend !== false &&
@@ -431,7 +452,14 @@ export function Composer() {
           ))}
         </div>
       ) : null}
-      <ComposerContext disabled={!!running || sending || attachmentBusy} />
+      <ComposerContext disabled={!!running || sending || attachmentBusy}>
+        {workspace === "chat" && <ProjectIntelligence
+          state={intelligence}
+          available={!!contextProject}
+          hasQuestion={!!text.trim()}
+          busy={!!running || sending || attachmentBusy}
+        />}
+      </ComposerContext>
       <div
         className={`composer ${dragOver ? "drag-over" : ""}`}
         ref={composerAnchor}

@@ -1,6 +1,6 @@
 {
   "name": "rcf",
-  "version": "0.2.3",
+  "version": "0.3.0",
   "private": true,
   "description": "Rote Coding Fraktion — desktop workspace powered by OpenCode V2",
   "author": "RCF contributors",
@@ -17,6 +17,7 @@
     "test:engine-manager-ui": "node scripts/engine-manager-ui.mjs",
     "test:desktop": "node scripts/desktop-smoke.mjs",
     "test:e2e": "node scripts/desktop-e2e.mjs",
+    "test:e2e:live": "node scripts/desktop-e2e.mjs --live",
     "test:followup": "node scripts/desktop-followup.mjs",
     "test:visual": "node scripts/visual-style-qa.mjs",
     "test:omniroute": "node scripts/omniroute-ui.mjs",
@@ -28,6 +29,7 @@
     "test:composer": "node scripts/composer-ui.mjs",
     "test:effort-animation": "node scripts/effort-animation-ui.mjs",
     "test:composer-context": "node scripts/composer-context-ui.mjs",
+    "test:project-context": "node scripts/run-ts.mjs tests/project-context.test.ts && npm run test:chat-isolation && node scripts/project-intelligence-ui.mjs",
     "package": "npm run build && node scripts/package.mjs",
     "package:dir": "npm run build && node scripts/package.mjs --dir",
     "test:settings": "node scripts/settings-ui.mjs",
@@ -41,6 +43,9 @@
     "typecheck": "tsc --noEmit",
     "test:rcf": "node scripts/run-ts.mjs scripts/rcf-integration.ts",
     "test:rcf-ui": "node scripts/rcf-ui.mjs",
+    "test:portable-smoke": "node scripts/portable-smoke.mjs",
+    "test:setup-smoke": "node scripts/portable-smoke.mjs --setup",
+    "verify:artifacts": "node scripts/verify-artifacts.mjs",
     "build:icons": "node scripts/build-icons.mjs"
   },
   "dependencies": {

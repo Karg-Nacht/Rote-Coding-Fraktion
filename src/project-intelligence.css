@@ -1,0 +1,54 @@
+.project-intelligence {
+  display: flex;
+  flex: 1 0 140px;
+  min-width: 0;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 4px 6px;
+}
+
+.project-intelligence .context-chip {
+  max-width: 100%;
+}
+
+.composer-context-bar:has(.project-intelligence) {
+  flex-wrap: wrap;
+}
+
+.project-intelligence-note,
+.project-intelligence-error {
+  flex-basis: 100%;
+  min-width: 0;
+  color: var(--muted);
+  font-size: 11px;
+  overflow-wrap: anywhere;
+}
+
+.project-intelligence-error {
+  color: var(--danger);
+}
+
+.project-intelligence-preview .dialog-body {
+  min-height: 0;
+  overflow: auto;
+}
+
+.project-intelligence-preview details {
+  min-width: 0;
+  margin-block: 8px;
+}
+
+.project-intelligence-preview summary {
+  cursor: pointer;
+  overflow-wrap: anywhere;
+}
+
+.project-intelligence-preview pre {
+  max-width: 100%;
+  overflow: auto;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 10px;
+  background: var(--surface-recessed);
+  font-size: 12px;
+}

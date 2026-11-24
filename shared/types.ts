@@ -52,7 +52,22 @@ export type Session = {
   completed?: boolean;
   directoryMissing?: boolean;
 };
-export type PromptOptions = { planning?: boolean; skills?: string[] };
+export type ProjectExcerpt = {
+  path: string;
+  startLine: number;
+  endLine: number;
+  text: string;
+  clipped: boolean;
+};
+export type ProjectContext = {
+  excerpts: ProjectExcerpt[];
+  files: number;
+  characters: number;
+  scannedFiles: number;
+  truncated: boolean;
+  excluded: Record<"directories" | "files" | "links" | "oversized" | "binary" | "sensitive" | "unavailable", number>;
+};
+export type PromptOptions = { planning?: boolean; skills?: string[]; projectContext?: { projectId: string; requestId: string } };
 export type Capabilities = {
   skills: { id: string; name: string; description: string }[];
   mcp: { name: string; title: string; status: string }[];
@@ -351,6 +366,8 @@ export interface DesktopApi {
   shareSession(sessionId: string): Promise<boolean>;
   deleteSession(sessionId: string): Promise<boolean>;
   openSessionWindow(sessionId: string): Promise<void>;
+  previewProjectContext(projectId: string, question: string, requestId: string, sessionId?: string): Promise<ProjectContext>;
+  cancelProjectContext(requestId: string): Promise<void>;
   send(
     sessionId: string,
     text: string,

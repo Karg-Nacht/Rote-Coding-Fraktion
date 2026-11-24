@@ -726,6 +726,15 @@ async function setup() {
     await createWindow(sessionId);
   });
   handle(
+    "previewProjectContext",
+    z.tuple([id, z.string().trim().min(1).max(200000), z.uuid(), id.optional()]),
+    (projectId, question, requestId, sessionId) =>
+      sessions.prepareProjectContext(projectId, question, requestId, sessionId),
+  );
+  handle("cancelProjectContext", z.tuple([z.uuid()]), (requestId) =>
+    sessions.projectContext.cancel(requestId),
+  );
+  handle(
     "send",
     z.tuple([
       id,
@@ -737,6 +746,7 @@ async function setup() {
         .object({
           planning: z.boolean().optional(),
           skills: z.array(id).max(20).optional(),
+          projectContext: z.object({ projectId: id, requestId: z.uuid() }).strict().optional(),
         })
         .strict()
         .optional(),

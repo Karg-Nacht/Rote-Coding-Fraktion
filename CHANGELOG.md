@@ -1,6 +1,14 @@
 # Changelog
 
-## 0.2.3 — current source
+## 0.3.0 — Project Intelligence
+
+- Added opt-in Project Context to Chat Faction. Preview the files, line ranges, actual excerpts, and scan exclusions before sending a question. Cancel preparation or recover from an error with the draft intact.
+- Electron Main searches a bounded set of UTF-8 text files in the selected project. It skips links, hidden and generated directories, credential files, and recognizable secrets. Ranking is lexical, so a question may need a relevant file name or symbol.
+- OpenCode receives the excerpts for the current opted-in model request. They stay out of RCF's database and the stored conversation input. Chat Faction continues to deny tools across all permission modes.
+- Windows x64 packaging checks derive artifact names and app versions from package metadata. The Setup and Portable targets remain unsigned.
+- Release verification covers unit tests, OpenCode's provider transport and Chat tool denials, both desktop themes at three widths, and isolated Windows Setup and Portable runs. The desktop end-to-end suite exercises real tool approvals with a loopback provider. The public free-model check remains available separately and is subject to provider quotas.
+
+## 0.2.3
 
 - Added OpenCode engine management in Settings. The bundled engine and TypeScript client remain pinned to 2.3.0. OpenCode 2.3.2 is an additional supported engine, subject to compatibility checks.
 - Added checks for npm package signatures and integrity, plus engine switching and rollback.

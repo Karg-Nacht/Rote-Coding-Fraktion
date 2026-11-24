@@ -1,5 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
+import metadata from "../package.json";
 import fs from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
@@ -41,7 +42,7 @@ test("RCF keeps the legacy profile and database, task bindings and all prior sta
   db.close();
   assert.equal(LEGACY_PROFILE, "Forge Agent");
   assert.equal(PRODUCT_NAME, "Rote Coding Fraktion");
-  assert.equal(PRODUCT_VERSION, "0.2.1");
+  assert.equal(PRODUCT_VERSION, metadata.version);
 });
 test("Worktree removal refuses tracked, untracked, ignored changes and root; clean removal preserves branch", async () => {
   const dir = await fs.mkdtemp(path.join(os.tmpdir(), "rcf-git-"));

@@ -51,6 +51,8 @@ const methods = [
   "shareSession",
   "deleteSession",
   "openSessionWindow",
+  "previewProjectContext",
+  "cancelProjectContext",
   "send",
   "stop",
   "editLastMessage",

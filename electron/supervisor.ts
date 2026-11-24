@@ -11,6 +11,7 @@ import { Redactor } from "./security";
 import { READER_PERMISSIONS, REVIEW_PERMISSIONS } from "./agent-control";
 import { REVIEW_INSTRUCTIONS } from "../shared/rcf";
 import { activeMap, checkEngine, STABLE_ENGINE_VERSION } from "./engine-compatibility";
+import { installProjectContextHook } from "./project-context-relay";
 
 export type EngineSelection = { directory: string; binary: string; version?: string; digest?: string };
 const exec = promisify(execFile);
@@ -108,6 +109,7 @@ export class OpenCodeSupervisor {
         "opencode.json",
       );
       await fs.mkdir(path.dirname(configFile), { recursive: true });
+      await installProjectContextHook(this.env.XDG_CONFIG_HOME);
       const previous = await fs
         .readFile(configFile, "utf8")
         .catch((e: NodeJS.ErrnoException) => {

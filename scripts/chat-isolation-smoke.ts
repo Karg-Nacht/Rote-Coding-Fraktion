@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import http from "node:http";
 import fs from "node:fs/promises";
 import path from "node:path";
+import { randomUUID } from "node:crypto";
 import { OpenCodeSupervisor } from "../electron/supervisor";
 import { SessionCoordinator } from "../electron/coordinator";
 import { LocalStorage } from "../electron/storage";
@@ -11,10 +12,13 @@ import { Redactor } from "../electron/security";
 const directory = path.resolve(`.runtime/chat-isolation-${process.pid}`);
 const projectPath = path.join(directory, "Проект");
 await fs.mkdir(projectPath, { recursive: true });
+const discoveredInstructions = path.join(projectPath, "AGENTS.md");
+await fs.writeFile(discoveredInstructions, "RCF_DISCOVERED_PROJECT_INSTRUCTIONS_41");
 let requests = 0;
 let offeredTools = -1;
 let sawMemory = false;
 let forgedCall = false;
+const modelRequests: string[] = [];
 const forbiddenFile = path.join(projectPath, "forbidden-tool-write.txt");
 const provider = http.createServer(async (request, response) => {
   if (!request.url?.endsWith("/chat/completions"))
@@ -23,6 +27,7 @@ const provider = http.createServer(async (request, response) => {
   for await (const chunk of request) text += chunk;
   const body = JSON.parse(text);
   requests++;
+  modelRequests.push(JSON.stringify(body.messages));
   offeredTools = Math.max(offeredTools, body.tools?.length ?? 0);
   sawMemory ||= JSON.stringify(body.messages).includes(
     "USER_MEMORY_MARKER_спокойно",
@@ -147,6 +152,7 @@ try {
   assert.ok(requests > 0, "Model transport was exercised");
   assert.equal(offeredTools, 0, "Chat must not offer any tools to the model");
   assert.ok(sawMemory, "Manually saved project memory must reach the provider");
+  assert.ok(modelRequests.every((body) => !body.includes("RCF_DISCOVERED_PROJECT_INSTRUCTIONS_41")));
   assert.equal(
     (await coordinator.snapshot(session.id)).session.workspace,
     "chat",
@@ -170,6 +176,8 @@ try {
     0,
   );
   storage.savePreferences({ memoryEnabled: false });
+  await fs.writeFile(discoveredInstructions, "RCF_DISCOVERED_PROJECT_INSTRUCTIONS_42");
+  await client.location.reload();
   await coordinator.send(
     session.id,
     "Memory is now disabled.",
@@ -195,12 +203,33 @@ try {
       JSON.stringify(entry.value).includes("USER_MEMORY_MARKER"),
     ),
   );
+  async function waitForTurn(marker: string) {
+    const deadline = Date.now() + 15_000;
+    while (Date.now() < deadline) {
+      const sent = modelRequests.find((body) => body.includes(marker));
+      if (sent && !(await client.session.active())[session.id]) return sent;
+      await new Promise((resolve) => setTimeout(resolve, 80));
+    }
+    assert.fail(`The provider did not complete ${marker}`);
+  }
+  await waitForTurn("Memory is now disabled.");
+  const code = 'export const restoreModel = "RCF_PROJECT_EVIDENCE_71259";\n';
+  const file = path.join(projectPath, "restore-model.ts");
+  await fs.writeFile(file, code);
+  const question = "ATTEMPT_FORGED_SHELL_CALL. Where does restoreModel run?";
+  const requestId = randomUUID();
+  const preview = await coordinator.prepareProjectContext(project.id, question, requestId, session.id);
+  assert.equal(preview.files, 1);
+  assert.equal(preview.excerpts[0]?.path, "restore-model.ts");
+  assert.ok(preview.excerpts[0]?.text.includes("RCF_PROJECT_EVIDENCE_71259"));
+  assert.ok(modelRequests.every((body) => !body.includes("RCF_PROJECT_EVIDENCE_71259")));
   await coordinator.send(
     session.id,
-    "ATTEMPT_FORGED_SHELL_CALL",
+    question,
     model,
     "full",
     [],
+    { projectContext: { projectId: project.id, requestId } },
   );
   const blockedDeadline = Date.now() + 10000;
   while (Date.now() < blockedDeadline) {
@@ -217,6 +246,14 @@ try {
     "Forged shell tool must never write a file",
   );
   assert.equal(offeredTools, 0);
+  assert.match(await waitForTurn(question), /RCF_PROJECT_EVIDENCE_71259/);
+  assert.doesNotMatch(JSON.stringify(await client.message.list({ sessionID: session.id })), /RCF_PROJECT_EVIDENCE_71259/);
+  assert.doesNotMatch(JSON.stringify(await client.experimental.session.instructions.entry.list({ sessionID: session.id })), /RCF_PROJECT_EVIDENCE_71259/);
+  await coordinator.send(session.id, "CONTEXT_DISABLED_FOLLOWUP", model, "cautious", []);
+  assert.doesNotMatch(await waitForTurn("CONTEXT_DISABLED_FOLLOWUP"), /RCF_PROJECT_EVIDENCE_71259/);
+  assert.ok(modelRequests.every((body) => !body.includes("RCF_DISCOVERED_PROJECT_INSTRUCTIONS_4")));
+  assert.equal(await fs.readFile(file, "utf8"), code);
+  console.log("PASS Project Intelligence preview and provider request, clean follow-up and no source persistence in OpenCode history");
   console.log(
     "PASS actual OpenCode 2.3 Chat catch-all denials across every mode; no model tools; forged shell call cannot write; scoped memory injection/removal; workspace-filtered content search",
   );
